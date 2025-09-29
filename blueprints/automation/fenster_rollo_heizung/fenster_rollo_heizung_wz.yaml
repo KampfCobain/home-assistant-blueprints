@@ -1,40 +1,33 @@
 blueprint:
-  name: Fenster + Rollladen + Heizung (per URL)
-  description: Steuerung von Rollladen und Heizung beim Lüften eines Fensters, URLs für Heizung frei wählbar
+  name: Fenster + Rollladen + Heizung (über rest_command)
+  description: Steuerung von Rollladen + Heizung beim Lüften eines Fensters
   domain: automation
   input:
     fenster_sensor:
       name: Fenster Sensor
-      description: Binary Sensor, der das Fenster auf/zu meldet
       selector:
         entity:
           domain: binary_sensor
     rollladen_cover:
       name: Rollladen
-      description: Cover Entität des Rollladens
       selector:
         entity:
           domain: cover
     gespeicherte_position:
       name: Helfer für gespeicherte Position
-      description: Input Number, um Rollladenposition zwischenzuspeichern
       selector:
         entity:
           domain: input_number
-    heizung_auf_url:
-      name: Heizung Fenster offen (URL)
-      description: URL, die aufgerufen wird, wenn das Fenster geöffnet wird (Heizung sperren / SetOverride)
-      default: "http://192.168.10.117/rpc/BluTrv.Call?id=200&method=TRV.SetOverride&params={\"id\":0}"
+    heizung_auf_command:
+      name: Heizung Fenster offen
       selector:
-        text:
-          multiline: false
-    heizung_zu_url:
-      name: Heizung Fenster zu (URL)
-      description: URL, die aufgerufen wird, wenn das Fenster geschlossen wird (Heizung frei / ClearOverride)
-      default: "http://192.168.10.117/rpc/BluTrv.Call?id=200&method=TRV.ClearOverride&params={\"id\":0}"
+        entity:
+          domain: rest_command
+    heizung_zu_command:
+      name: Heizung Fenster zu
       selector:
-        text:
-          multiline: false
+        entity:
+          domain: rest_command
 
 trigger:
   - platform: device
@@ -54,7 +47,6 @@ mode: restart
 
 action:
   - choose:
-      # Fenster auf
       - conditions:
           - condition: trigger
             id:
@@ -70,24 +62,17 @@ action:
           - service: cover.open_cover
             target:
               entity_id: !input rollladen_cover
-          - service: uri
-            data:
-              url: !input heizung_auf_url
-              method: GET
+          - service: !input heizung_auf_command
 
-      # Fenster zu
       - conditions:
           - condition: trigger
             id:
               - fenster_zu
         sequence:
-          - delay: "00:00:03"   # Kurzes Kipp-Öffnen abfangen
+          - delay: "00:00:03"
           - service: cover.set_cover_position
             target:
               entity_id: !input rollladen_cover
             data:
               position: "{{ states(!input gespeicherte_position) | int }}"
-          - service: uri
-            data:
-              url: !input heizung_zu_url
-              method: GET
+          - service: !input heizung_zu_command
