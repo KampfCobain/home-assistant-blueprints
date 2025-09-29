@@ -60,20 +60,17 @@ action:
             id:
               - fenster_auf
         sequence:
-          - condition: template
-            value_template: >
-              {% set cover_entity = !input rollladen_cover %}
-              {{ state_attr(cover_entity, 'current_position') | int < 100 }}
+          # Rollladenposition speichern
           - service: input_number.set_value
             target:
               entity_id: !input gespeicherte_position
             data:
-              value: >
-                {% set cover_entity = !input rollladen_cover %}
-                {{ state_attr(cover_entity, 'current_position') | int }}
+              value: "{{ state_attr(!input rollladen_cover, 'current_position') | int }}"
+          # Rollladen hochfahren
           - service: cover.open_cover
             target:
               entity_id: !input rollladen_cover
+          # Heizung sperren / SetOverride
           - service: uri
             data:
               url: !input heizung_auf_url
@@ -85,14 +82,14 @@ action:
             id:
               - fenster_zu
         sequence:
-          - delay: "00:00:03"   # Kurzes Kipp-Öffnen abfangen
+          - delay: "00:00:03"   # Kurzes Kipp-Lüften abfangen
+          # Rollladenposition wiederherstellen
           - service: cover.set_cover_position
             target:
               entity_id: !input rollladen_cover
             data:
-              position: >
-                {% set pos_helper = !input gespeicherte_position %}
-                {{ states(pos_helper) | int }}
+              position: "{{ states(!input gespeicherte_position) | int }}"
+          # Heizung frei / ClearOverride
           - service: uri
             data:
               url: !input heizung_zu_url
