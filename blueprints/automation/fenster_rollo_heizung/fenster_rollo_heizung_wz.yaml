@@ -61,12 +61,16 @@ action:
               - fenster_auf
         sequence:
           - condition: template
-            value_template: "{{ state_attr(!input rollladen_cover, 'current_position') | int < 100 }}"
+            value_template: >
+              {% set cover_entity = !input rollladen_cover %}
+              {{ state_attr(cover_entity, 'current_position') | int < 100 }}
           - service: input_number.set_value
             target:
               entity_id: !input gespeicherte_position
             data:
-              value: "{{ state_attr(!input rollladen_cover, 'current_position') | int }}"
+              value: >
+                {% set cover_entity = !input rollladen_cover %}
+                {{ state_attr(cover_entity, 'current_position') | int }}
           - service: cover.open_cover
             target:
               entity_id: !input rollladen_cover
@@ -86,7 +90,9 @@ action:
             target:
               entity_id: !input rollladen_cover
             data:
-              position: "{{ states(!input gespeicherte_position) | int }}"
+              position: >
+                {% set pos_helper = !input gespeicherte_position %}
+                {{ states(pos_helper) | int }}
           - service: uri
             data:
               url: !input heizung_zu_url
